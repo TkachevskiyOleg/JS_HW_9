@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <h1>Color Palette</h1>
+    <form id="colorForm">
+        <label for="colorName">Color Name:</label>
+        <input type="text" id="colorName" name="colorName" required pattern="[a-zA-Z]+">
+        <span class="error" id="colorNameError"></span>
+
+        <label for="colorType">Color Type:</label>
+        <select id="colorType" name="colorType">
+            <option value="RGB">RGB</option>
+            <option value="RGBA">RGBA</option>
+            <option value="HEX">HEX</option>
+        </select>
+        <span class="error" id="colorTypeError"></span>
+
+        <label for="colorCode">Color Code:</label>
+        <input type="text" id="colorCode" name="colorCode" required>
+        <span class="error" id="colorCodeError"></span>
+
+        <button type="submit">Save</button>
+    </form>
+
+    <div id="colorPalette"></div>
+
+    <script>
+        const colorForm = document.getElementById('colorForm');
+        const colorNameInput = document.getElementById('colorName');
+        const colorTypeError = document.getElementById('colorTypeError');
+        const colorCodeInput = document.getElementById('colorCode');
+        const colorCodeError = document.getElementById('colorCodeError');
+        const colorPalette = document.getElementById('colorPalette');
+        const colorTypeInput = document.getElementById('colorType');
+
+        colorForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const colorName = colorNameInput.value.trim();
+            const colorType = colorTypeInput.value;
+            const colorCode = colorCodeInput.value.trim();
+
+            colorNameError.textContent = '';
+            colorTypeError.textContent = '';
+            colorCodeError.textContent = '';
+
+
+            if (!colorName.match(/^[a-zA-Z]+$/)) {
+                colorNameError.textContent = 'Color name must contain only letters.';
+                return;
+            }
+
+
+            let isValidColorCode = false;
+            if (colorType === 'RGB' && colorCode.match(/^(\d{1,3},){2}\d{1,3}$/)) {
+                isValidColorCode = true;
+            } else if (colorType === 'RGBA' && colorCode.match(/^(\d{1,3},){3}((\d+(\.\d+)?)|(\.\d+))$/)) {
+                isValidColorCode = true;
+            } else if (colorType === 'HEX' && colorCode.match(/^#[0-9A-Fa-f]{6}$/)) {
+                isValidColorCode = true;
+            }
+
+            if (!isValidColorCode) {
+                colorCodeError.textContent = 'Invalid color code format.';
+                return;
+            }
+
+
+            const colors = getSavedColors();
+            if (colors.some(color => color.name.toLowerCase() === colorName.toLowerCase())) {
+                colorNameError.textContent = 'Color name must be unique.';
+                return;
+            }
+
+            const color = { name: colorName, type: colorType, code: colorCode };
+            colors.push(color);
+            saveColorsToCookie(colors);
+
+
+            renderColor(color);
+
+
+            colorForm.reset();
+        });
+
+        function getSavedColors() {
+            const savedColorsJSON = getCookie('colors');
+            return savedColorsJSON ? JSON.parse(savedColorsJSON) : [];
+        }
+
+        function saveColorsToCookie(colors) {
+            const colorsJSON = JSON.stringify(colors);
+            setCookie('colors', colorsJSON, 3);
+        }
+
+        function setCookie(name, value, hours) {
+            const expires = new Date(Date.now() + hours * 3600 * 1000).toUTCString();
+            document.cookie = `${name}=${value}; expires=${expires}; path=/`;
+        }
+
+        function getCookie(name) {
+            const cookies = document.cookie.split('; ');
+            for (const cookie of cookies) {
+                const [cookieName, cookieValue] = cookie.split('=');
+                if (cookieName === name) {
+                    return cookieValue;
+                }
+            }
+            return '';
+        }
+
+        function renderColor(color) {
+            const colorBox = document.createElement('div');
+            colorBox.classList.add('color-box');
+            if (color.type == 'HEX') {
+                colorBox.style.backgroundColor = `${color.code}`;
+
+            }
+            else { colorBox.style.backgroundColor = `${color.type}(${color.code})`; }
+            colorPalette.appendChild(colorBox);
+            const divInner = document.createElement('div');
+            divInner.classList.add('divInner');
+            divInner.innerHTML = `<p>${color.name}</p><p>${color.type}</p><p>${color.code}</p>`;
+            colorBox.appendChild(divInner);
+
+        }
+
+        addEventListener("DOMContentLoaded", (event) => {
+            const savedColors = getSavedColors();
+            renderColors(savedColors);
+
+            function renderColors(colors) {
+                for (const color of colors) {
+                    renderColor(color);
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>
